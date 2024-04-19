@@ -18,14 +18,12 @@ public class MyHttpServletRequest implements HttpServletRequest {
     private String contextPath;
     private String requestURI;
     private Cookie[] cookies;
-    private Enumeration<String> attributeNames;
     private String characterEncoding;
     private int ContentLength = 0;
     private  long contentLengthLong = 0;
     private  String ContentType;
-    private Enumeration<String> parameterNames;
     Map<String, String[]> parameterMap = new HashMap<>();
-    Enumeration<String> headerNames;
+    Map<String, List<String>> headMap = new HashMap<>();
     private String remoteAddr;
     private String remoteUser;
     private String remoteHost;
@@ -33,14 +31,33 @@ public class MyHttpServletRequest implements HttpServletRequest {
     private String localAddr;
     private String localName;
     private int localPort;
+    private String serverName;
+    private int serverPort;
+    private String method;
+    private String protocol;
+    private String scheme;
+    private String pathInfo;
+    private String pathTranslated;
+    private String queryString;
 
     public MyHttpServletRequest(HttpServletRequest request) {
-        this.attributeNames = request.getAttributeNames();
+        //复制一遍对象，原来的request失效时会把对象清空
+        Enumeration<String> attributeNames = request.getAttributeNames();
         while(attributeNames.hasMoreElements()) {
             String name = attributeNames.nextElement();
             this.attributes.put(name, request.getAttribute(name));
         }
-        this.cookies = request.getCookies();
+        Enumeration<String> parameterNames = request.getParameterNames();
+        while(parameterNames.hasMoreElements()) {
+            String name = parameterNames.nextElement();
+            this.parameterMap.put(name, request.getParameterValues(name));
+        }
+        //复制Cookie
+        this.cookies = new Cookie[request.getCookies().length];
+        for (int i = 0;i<request.getCookies().length;i++) {
+            Cookie cookie = request.getCookies()[i];
+            this.cookies[i] = copyCookie(cookie);
+        }
         this.servletPath = request.getServletPath();
         this.requestURL = request.getRequestURL();
         this.requestURI = request.getRequestURI();
@@ -56,11 +73,38 @@ public class MyHttpServletRequest implements HttpServletRequest {
         this.ContentLength = request.getContentLength();
         this.contentLengthLong = request.getContentLengthLong();
         this.ContentType = request.getContentType();
+        Enumeration<String> headerName = request.getHeaderNames();
+        while(headerName.hasMoreElements()) {
+            String name = headerName.nextElement();
+            this.headMap.put(name, Collections.list(request.getHeaders(name)));
+        }
+        this.serverName = request.getServerName();
+        this.serverPort = request.getServerPort();
+        this.method = request.getMethod();
+        this.protocol = request.getProtocol();
+        this.scheme = request.getScheme();
+        this.pathInfo = request.getPathInfo();
+        this.pathTranslated = request.getPathTranslated();
+        this.queryString = request.getQueryString();
+    }
 
-        this.parameterNames = request.getParameterNames();
-        this.parameterMap = request.getParameterMap();
-
-        headerNames = request.getHeaderNames();
+    private Enumeration<String> copyEnumeration(Enumeration<String> headerName) {
+        Vector<String> copiedVector = new Vector<String>();
+        while (headerName.hasMoreElements()) {
+            copiedVector.add(headerName.nextElement());
+        }
+        return copiedVector.elements();
+    }
+    public static Cookie copyCookie(Cookie oldCookie) {
+        Cookie newCookie = new Cookie(oldCookie.getName(), oldCookie.getValue());
+        newCookie.setMaxAge(oldCookie.getMaxAge());
+        newCookie.setPath(oldCookie.getPath());
+        if(oldCookie.getDomain() != null){
+            newCookie.setDomain(oldCookie.getDomain());
+        }
+        newCookie.setSecure(oldCookie.getSecure());
+        newCookie.setHttpOnly(oldCookie.isHttpOnly());
+        return newCookie;
     }
 
     @Override
@@ -71,7 +115,7 @@ public class MyHttpServletRequest implements HttpServletRequest {
     @Override
     public Enumeration<String> getAttributeNames() {
         // TODO Auto-generated method stub
-        return this.attributeNames;
+        return Collections.enumeration(this.attributes.keySet());
     }
 
     @Override
@@ -82,25 +126,22 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-        // TODO Auto-generated method stub
+        this.characterEncoding = env;
 
     }
 
     @Override
     public int getContentLength() {
-        // TODO Auto-generated method stub
         return this.ContentLength;
     }
 
     @Override
     public long getContentLengthLong() {
-        // TODO Auto-generated method stub
         return this.contentLengthLong;
     }
 
     @Override
     public String getContentType() {
-        // TODO Auto-generated method stub
         return this.ContentType;
     }
 
@@ -134,7 +175,7 @@ public class MyHttpServletRequest implements HttpServletRequest {
     @Override
     public Enumeration<String> getParameterNames() {
         // TODO Auto-generated method stub
-        return this.parameterNames;
+        return Collections.enumeration(this.parameterMap.keySet());
     }
 
     @Override
@@ -151,26 +192,22 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getProtocol() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.protocol;
     }
 
     @Override
     public String getScheme() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.scheme;
     }
 
     @Override
     public String getServerName() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.serverName;
     }
 
     @Override
     public int getServerPort() {
-        // TODO Auto-generated method stub
-        return 0;
+        return this.serverPort;
     }
 
     @Override
@@ -181,13 +218,11 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getRemoteAddr() {
-        // TODO Auto-generated method stub
         return this.remoteAddr;
     }
 
     @Override
     public String getRemoteHost() {
-        // TODO Auto-generated method stub
         return this.remoteHost;
     }
 
@@ -234,25 +269,21 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public int getRemotePort() {
-        // TODO Auto-generated method stub
         return this.remotePort;
     }
 
     @Override
     public String getLocalName() {
-        // TODO Auto-generated method stub
         return this.localName;
     }
 
     @Override
     public String getLocalAddr() {
-        // TODO Auto-generated method stub
         return this.localAddr;
     }
 
     @Override
     public int getLocalPort() {
-        // TODO Auto-generated method stub
         return this.localPort;
     }
 
@@ -307,7 +338,6 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public Cookie[] getCookies() {
-        // TODO Auto-generated method stub
         return cookies;
     }
 
@@ -319,20 +349,18 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getHeader(String name) {
-        // TODO Auto-generated method stub
-        return null;
+        List<String> list = this.headMap.get(name);
+        return list != null && !list.isEmpty()?list.get(0):null;
     }
 
     @Override
     public Enumeration<String> getHeaders(String name) {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.enumeration(this.headMap.get(name));
     }
 
     @Override
     public Enumeration<String> getHeaderNames() {
-        // TODO Auto-generated method stub
-        return null;
+        return Collections.enumeration(this.headMap.keySet());
     }
 
     @Override
@@ -343,37 +371,31 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getMethod() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.method;
     }
 
     @Override
     public String getPathInfo() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.pathInfo;
     }
 
     @Override
     public String getPathTranslated() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.pathTranslated;
     }
 
     @Override
     public String getContextPath() {
-        // TODO Auto-generated method stub
         return this.contextPath;
     }
 
     @Override
     public String getQueryString() {
-        // TODO Auto-generated method stub
-        return null;
+        return this.queryString;
     }
 
     @Override
     public String getRemoteUser() {
-        // TODO Auto-generated method stub
         return this.remoteUser;
     }
 
@@ -397,13 +419,11 @@ public class MyHttpServletRequest implements HttpServletRequest {
 
     @Override
     public String getRequestURI() {
-        // TODO Auto-generated method stub
         return this.requestURI;
     }
 
     @Override
     public StringBuffer getRequestURL() {
-        // TODO Auto-generated method stub
         return this.requestURL;
     }
 
