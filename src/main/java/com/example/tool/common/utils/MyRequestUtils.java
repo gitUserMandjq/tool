@@ -1,5 +1,6 @@
 package com.example.tool.common.utils;
 
+import com.example.tool.common.model.MyHttpServletRequest;
 import com.example.tool.common.model.MyHttpServletResponse;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -60,9 +61,21 @@ public class MyRequestUtils {
 		}
 		return request;
      }
-    
-    
-    
+
+
+	public static void setRequestThread(HttpServletRequest request){
+		requestThread.set(request);
+	}
+	public static void setRequestThread(){
+		if(RequestContextHolder.getRequestAttributes() != null ) {
+			HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+			requestThread.set(new MyHttpServletRequest(request));
+		}
+	}
+	public static void removeRequestThread(){
+		requestThread.remove();
+	}
+
     public static Object getRequestAttribute(String name) {
     	return getRequest().getAttribute(name);
     }
@@ -78,17 +91,17 @@ public class MyRequestUtils {
     }
     public static String getParameterString() {
     	HttpServletRequest httpRequest = getRequest();
-    	Enumeration paramNames = httpRequest.getParameterNames(); 
+    	Enumeration paramNames = httpRequest.getParameterNames();
     	StringBuilder logger = new StringBuilder("\r");
-	  	while (paramNames.hasMoreElements()) { 
-	  	   String paramName = (String) paramNames.nextElement(); 
-	  	   String[] paramValues = httpRequest.getParameterValues(paramName); 
-	  	   if (paramValues.length == 1) { 
-		  	    String paramValue = paramValues[0]; 
-		  	    if (paramValue.length() != 0) { 
-		  	    	logger.append("参数：" + paramName + "=" + paramValue+"\r"); 
-		  	    } 
-	  	   } 
+	  	while (paramNames.hasMoreElements()) {
+	  	   String paramName = (String) paramNames.nextElement();
+	  	   String[] paramValues = httpRequest.getParameterValues(paramName);
+	  	   if (paramValues.length == 1) {
+		  	    String paramValue = paramValues[0];
+		  	    if (paramValue.length() != 0) {
+		  	    	logger.append("参数：" + paramName + "=" + paramValue+"\r");
+		  	    }
+	  	   }
 	  	}
 	  	return logger.toString();
     }
